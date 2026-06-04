@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tareas - 1ro Básico C</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --primary: #0984e3;
+            --success: #00b894;
+            --danger: #d63031;
+            --border: #dfe6e9;
+            --font: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font); }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh;}
+        
+        /* Header */
+        header { background: var(--card-bg); padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; position: sticky; top: 0; z-index: 100;}
+        h1 { font-size: 1.5rem; color: var(--primary); }
+        .current-date { font-size: 0.9rem; color: var(--text-muted); margin-top: 5px; }
+        
+        /* Progress Bar General */
+        .progress-container { margin: 15px 20px; background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .progress-text { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold;}
+        .progress-bar-bg { background: var(--border); height: 10px; border-radius: 5px; overflow: hidden; }
+        .progress-bar-fill { background: var(--success); height: 100%; width: 0%; transition: width 0.5s ease; }
+
+        /* Navigation */
+        nav { display: flex; overflow-x: auto; padding: 10px 20px; gap: 10px; background: var(--bg-color); }
+        nav::-webkit-scrollbar { display: none; }
+        .nav-btn { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: 600; color: var(--text-muted); transition: 0.2s;}
+        .nav-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Main Content */
+        main { flex: 1; padding: 20px; max-width: 800px; margin: 0 auto; width: 100%; }
+        .section-title { font-size: 1.2rem; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 2px solid var(--border); }
+        .view-section { display: none; animation: fadeIn 0.3s; }
+        .view-section.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Task Cards */
+        .task-list { display: flex; flex-direction: column; gap: 12px; }
+        .task-card { background: var(--card-bg); border-radius: 12px; padding: 15px; border-left: 5px solid gray; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 8px;}
+        .task-card.completed { opacity: 0.6; text-decoration: line-through; border-left-color: var(--success) !important; }
+        .task-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .task-subject { font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .task-title { font-size: 1.1rem; font-weight: 600; margin-top: 5px; }
+        .task-desc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;}
+        .task-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 0.85rem;}
+        
+        .badge { padding: 4px 8px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; }
+        .badge-casa { background: #ffeaa7; color: #d35400; }
+        .badge-clase { background: #81ecec; color: #00b894; }
+        .date-text { font-weight: 500; color: var(--danger); }
+
+        /* Checkbox custom */
+        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; color: var(--success);}
+        .checkbox-wrapper input { width: 20px; height: 20px; cursor: pointer; accent-color: var(--success); }
+
+        /* Calendar */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .cal-header { font-weight: bold; padding: 5px 0; font-size: 0.8rem; background: var(--border); border-radius: 5px;}
+        .cal-day { background: var(--card-bg); padding: 10px 5px; border-radius: 5px; min-height: 60px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #eee; position: relative;}
+        .cal-day.today { border: 2px solid var(--primary); background: #eef2ff;}
+        .cal-date { font-weight: bold; font-size: 0.9rem; }
+        .cal-dots { display: flex; justify-content: center; flex-wrap: wrap; gap: 2px; margin-top: 5px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* Forms */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.9rem; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; }
+        .btn-submit { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .auto-date-box { background: #eef2ff; padding: 10px; border-radius: 8px; margin-top: 5px; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;}
+
+        /* Courses Grid */
+        .courses-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .course-card { background: var(--card-bg); padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer;}
+        .course-card span { font-size: 2rem; display: block; margin-bottom: 10px;}
+
+        /* No Tasks */
+        .no-tasks { text-align: center; color: var(--text-muted); padding: 20px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📚 Liceo del Monte - 1ro C</h1>
+        <div class="current-date" id="displayDate"></div>
+    </header>
+
+    <div class="progress-container">
+        <div class="progress-text">
+            <span>Progreso del Bimestre</span>
+            <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+    </div>
+
+    <nav>
+        <button class="nav-btn active" onclick="switchView('home')">Hoy / Mañana</button>
+        <button class="nav-btn" onclick="switchView('calendar')">Calendario</button>
+        <button class="nav-btn" onclick="switchView('courses')">Cursos</button>
+        <button class="nav-btn" onclick="switchView('add')">+ Nueva Tarea</button>
+    </nav>
+
+    <main>
+        <!-- Home View -->
+        <div id="view-home" class="view-section active">
+            <h2 class="section-title">🚨 Para Hoy</h2>
+            <div id="today-tasks" class="task-list"></div>
+            
+            <h2 class="section-title" style="margin-top: 25px;">⏳ Para Mañana</h2>
+            <div id="tomorrow-tasks" class="task-list"></div>
+        </div>
+
+        <!-- Calendar View -->
+        <div id="view-calendar" class="view-section">
+            <h2 class="section-title">📅 Calendario de Entregas</h2>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <button class="nav-btn" onclick="changeMonth(-1)">⬅️ Mes anterior</button>
+                <h3 id="cal-month-name">Junio 2026</h3>
+                <button class="nav-btn" onclick="changeMonth(1)">Mes sig. ➡️</button>
+            </div>
+            <div class="calendar-grid">
+                <div class="cal-header">Dom</div><div class="cal-header">Lun</div><div class="cal-header">Mar</div>
+                <div class="cal-header">Mié</div><div class="cal-header">Jue</div><div class="cal-header">Vie</div><div class="cal-header">Sáb</div>
+                <!-- Dias inyectados por JS -->
+            </div>
+            <div id="cal-selected-tasks" style="margin-top:20px;"></div>
+        </div>
+
+        <!-- Courses View -->
+        <div id="view-courses" class="view-section">
+            <h2 class="section-title">📂 Materias</h2>
+            <div class="courses-grid" id="courses-list"></div>
+            <div id="course-details" style="display:none; margin-top:20px;">
+                <button class="nav-btn" onclick="closeCourseDetails()" style="margin-bottom:15px;">⬅️ Volver</button>
+                <h2 class="section-title" id="course-title-details"></h2>
+                <div id="course-tasks" class="task-list"></div>
+            </div>
+        </div>
+
+        <!-- Add Task View -->
+        <div id="view-add" class="view-section">
+            <h2 class="section-title">✍️ Agregar Nueva Tarea</h2>
+            <form id="addTaskForm">
+                <div class="form-group">
+                    <label>Materia</label>
+                    <select id="taskSubject" required onchange="calculateNextClass()"></select>
+                </div>
+                <div class="form-group">
+                    <label>Título de la tarea</label>
+                    <input type="text" id="taskTitle" required placeholder="Ej. Ejercicios pág 20">
+                </div>
+                <div class="form-group">
+                    <label>Descripción detallada</label>
+                    <textarea id="taskDesc" rows="3" required placeholder="¿Qué hay que hacer exactamente?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>¿Dónde se hace?</label>
+                    <select id="taskType" required>
+                        <option value="Casa">Para la Casa</option>
+                        <option value="Clase">En la Clase</option>
+                    </select>
+                </div>
+                
+                <div class="form-group auto-date-box">
+                    <input type="checkbox" id="autoDate" onchange="calculateNextClass()" style="width:auto;">
+                    <label for="autoDate" style="margin:0;">Establecer automáticamente para el <b>próximo día de clase</b></label>
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha de Entrega</label>
+                    <input type="date" id="taskDate" required>
+                </div>
+                <button type="submit" class="btn-submit">Guardar Tarea</button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // CONFIGURACIÓN DE FECHA: Forzamos la fecha para que inicie en el 4 de Junio 2026.
+        // En un futuro real, cambiar `new Date('2026-06-04T12:00:00')` por `new Date()`.
+        const CURRENT_DATE = new Date('2026-06-04T12:00:00'); 
+        let calendarDate = new Date('2026-06-04T12:00:00');
+
+        const subjectsInfo = {
+            'Inglés': { color: '#ff7675', icon: '🇬🇧' },
+            'Ciencias Naturales': { color: '#55efc4', icon: '🌿' },
+            'Programación': { color: '#0984e3', icon: '💻' },
+            'Matemática': { color: '#fdcb6e', icon: '📐' },
+            'Ciencias Sociales': { color: '#e17055', icon: '🌍' },
+            'Idioma Español': { color: '#d63031', icon: '📖' },
+            'Educación Física': { color: '#00b894', icon: '⚽' },
+            'Idioma Maya': { color: '#a29bfe', icon: '🗿' },
+            'Emprendimiento': { color: '#e84393', icon: '💡' },
+            'Expresión Artística': { color: '#fab1a0', icon: '🎨' },
+            'Computación': { color: '#74b9ff', icon: '🖥️' }
+        };
+
+        // Horario (0=Dom, 1=Lun, 2=Mar, 3=Mie, 4=Jue, 5=Vie, 6=Sab)
+        const schedule = {
+            1: ['Programación', 'Expresión Artística', 'Ciencias Naturales', 'Inglés', 'Idioma Español', 'Ciencias Sociales', 'Computación'],
+            2: ['Idioma Español', 'Matemática', 'Inglés', 'Ciencias Sociales', 'Expresión Artística', 'Programación', 'Idioma Maya', 'Emprendimiento'],
+            3: ['Computación', 'Idioma Maya', 'Idioma Español', 'Emprendimiento', 'Matemática', 'Ciencias Naturales'],
+            4: ['Ciencias Sociales', 'Emprendimiento', 'Matemática', 'Inglés', 'Programación', 'Idioma Maya', 'Educación Física'],
+            5: ['Emprendimiento', 'Matemática', 'Ciencias Sociales', 'Ciencias Naturales', 'Inglés', 'Programación', 'Idioma Español', 'Expresión Artística']
+        };
+
+        // Semilla de Tareas (Extraídas de la Sección C del PDF)
+        const seedTasks = [
+            // INGLÉS
+            { id: 'en1', subject: 'Inglés', title: 'Possessives adjectives', desc: 'Escriba en su cuaderno 10 oraciones utilizando possessives adjectives', type: 'Casa', date: '2026-06-05', completed: false },
+            { id: 'en2', subject: 'Inglés', title: 'Genitive case', desc: 'Escriba e ilustre en su cuaderno 10 oraciones utilizando Genitive case', type: 'Casa', date: '2026-06-17', completed: false },
+            { id: 'en3', subject: 'Inglés', title: '4th July', desc: 'Instrucciones se darán en clase (creatividad)', type: 'Clase', date: '2026-07-02', completed: false },
+            { id: 'en4', subject: 'Inglés', title: 'Present continuos', desc: 'Escriba e ilustre 10 oraciones utilizando presente continuo', type: 'Casa', date: '2026-07-08', completed: false },
+            { id: 'en5', subject: 'Inglés', title: 'Workbook', desc: 'Trabajar actividades de páginas', type: 'Casa', date: '2026-07-13', completed: false },
+            { id: 'en6', subject: 'Inglés', title: 'Vocabulary words', desc: 'Vocabularios en cuaderno', type: 'Clase', date: '2026-07-13', completed: false },
+            // C. NATURALES
+            { id: 'cn1', subject: 'Ciencias Naturales', title: 'Evaluación diagnóstica', desc: 'Realice los ejercicios de las páginas 126 y 127', type: 'Clase', date: '2026-06-08', completed: false },
+            { id: 'cn2', subject: 'Ciencias Naturales', title: 'Especies Nativas', desc: 'Exposición en grupos sobre la amplia diversidad. Requiere cartel', type: 'Casa', date: '2026-06-17', completed: false },
+            { id: 'cn3', subject: 'Ciencias Naturales', title: 'Recursos naturales', desc: 'Investigación: 10 renovables, 10 no renovables, 10 contaminación. Recorte o dibujo en cuaderno', type: 'Casa', date: '2026-06-22', completed: false },
+            { id: 'cn4', subject: 'Ciencias Naturales', title: 'Terremotos', desc: 'Exposición grupal con cartel, dibujos o recortes', type: 'Casa', date: '2026-07-06', completed: false },
+            { id: 'cn5', subject: 'Ciencias Naturales', title: 'Revisión', desc: 'Se revisará libro y cuaderno del bimestre', type: 'Clase', date: '2026-07-14', completed: false },
+            // PROGRAMACIÓN
+            { id: 'pr1', subject: 'Programación', title: 'Entorno Scratch', desc: 'Investigue y explique las funciones principales de Scratch creativamente', type: 'Casa', date: '2026-06-05', completed: false },
+            { id: 'pr2', subject: 'Programación', title: 'Bloques de movimiento', desc: 'Proyecto en Scratch: movimientos básicos y apariencia. Códigos en cuaderno', type: 'Clase', date: '2026-06-10', completed: false },
+            { id: 'pr3', subject: 'Programación', title: 'Variables y Op.', desc: 'Proyecto Scratch con cálculos básicos matemáticos.', type: 'Clase', date: '2026-06-19', completed: false },
+            { id: 'pr4', subject: 'Programación', title: 'Eventos y Sensores', desc: 'Proyecto interactivo con control de flujo y ciclos', type: 'Clase', date: '2026-07-03', completed: false },
+            { id: 'pr5', subject: 'Programación', title: 'Proyecto Integrador', desc: 'Proyecto libre Scratch con variables, operadores, eventos.', type: 'Clase', date: '2026-07-10', completed: false },
+            // MATEMÁTICA
+            { id: 'mt1', subject: 'Matemática', title: 'Ecuaciones 1er grado', desc: 'Ejercicios págs 163, 165 y 167. Procedimiento completo', type: 'Casa', date: '2026-06-09', completed: false },
+            { id: 'mt2', subject: 'Matemática', title: 'Expresiones Algebraicas', desc: 'Reducción de términos. Págs 173, 175 y 177', type: 'Casa', date: '2026-06-16', completed: false },
+            { id: 'mt3', subject: 'Matemática', title: 'Multiplicación/División', desc: 'Ejercicios algebraicos págs 180, 181, 184 y 185', type: 'Casa', date: '2026-06-23', completed: false },
+            { id: 'mt4', subject: 'Matemática', title: 'Área y volumen', desc: 'Cálculo en diferentes figuras págs 193, 195, 198 y 199', type: 'Casa', date: '2026-07-07', completed: false },
+            { id: 'mt5', subject: 'Matemática', title: 'Unidades capacidad', desc: 'Conversiones en páginas 204 y 205', type: 'Casa', date: '2026-07-14', completed: false },
+            { id: 'mt6', subject: 'Matemática', title: 'Prueba Corta', desc: 'Prueba sobre temas vistos en la unidad', type: 'Clase', date: '2026-07-17', completed: false },
+            { id: 'mt7', subject: 'Matemática', title: 'Revisión Cuaderno', desc: 'Presentar cuaderno y libro completo y ordenado', type: 'Clase', date: '2026-07-17', completed: false },
+            // CIENCIAS SOCIALES
+            { id: 'cs1', subject: 'Ciencias Sociales', title: 'Dibujo templo', desc: 'Hoja doble oficio: Dibujo de Tikal o Chichén Itzá con ficha técnica', type: 'Casa', date: '2026-06-08', completed: false },
+            { id: 'cs2', subject: 'Ciencias Sociales', title: 'Línea del tiempo', desc: '5 periodos prehispánicos, 2 características c/u', type: 'Casa', date: '2026-06-18', completed: false },
+            { id: 'cs3', subject: 'Ciencias Sociales', title: 'La contaminación', desc: 'Investigación en hojas con líneas, causas, ecosistemas.', type: 'Casa', date: '2026-07-02', completed: false },
+            { id: 'cs4', subject: 'Ciencias Sociales', title: 'Edad de los metales', desc: 'Investigación grupal, folder, 3 etapas, inventos.', type: 'Clase', date: '2026-07-09', completed: false },
+            { id: 'cs5', subject: 'Ciencias Sociales', title: 'Libro y cuaderno', desc: 'Revisión de firmas y resúmenes', type: 'Clase', date: '2026-07-13', completed: false },
+            // IDIOMA ESPAÑOL
+            { id: 'ie1', subject: 'Idioma Español', title: 'Modernismo', desc: 'Investigación literatura modernismo y vanguardismo', type: 'Casa', date: '2026-06-10', completed: false },
+            { id: 'ie2', subject: 'Idioma Español', title: 'Literatura 1900-1954', desc: 'Exposición autores guatemaltecos', type: 'Clase', date: '2026-06-16', completed: false },
+            { id: 'ie3', subject: 'Idioma Español', title: 'Historieta', desc: 'Tema: Contaminación en Guatemala', type: 'Casa', date: '2026-07-13', completed: false },
+            { id: 'ie4', subject: 'Idioma Español', title: 'El blog', desc: 'Investigar tipos de blog e ilustrar', type: 'Casa', date: '2026-07-20', completed: false },
+            { id: 'ie5', subject: 'Idioma Español', title: 'Ortografía', desc: 'Revisión libro y cuaderno de ortografía', type: 'Casa', date: '2026-07-29', completed: false },
+            // EDUCACIÓN FÍSICA
+            { id: 'ef1', subject: 'Educación Física', title: 'Desplazamiento', desc: 'Mejorar rapidez. Calzado adecuado.', type: 'Clase', date: '2026-06-04', completed: false },
+            { id: 'ef2', subject: 'Educación Física', title: 'Recepción Media', desc: 'Técnica de recepción antebrazo', type: 'Clase', date: '2026-06-11', completed: false },
+            { id: 'ef3', subject: 'Educación Física', title: 'Saque por abajo', desc: 'Control y dirección del balón', type: 'Clase', date: '2026-06-18', completed: false },
+            { id: 'ef4', subject: 'Educación Física', title: 'Voleo frontal', desc: 'Control y precisión del pase', type: 'Clase', date: '2026-07-02', completed: false },
+            { id: 'ef5', subject: 'Educación Física', title: 'Bloqueos', desc: 'Técnica defensiva', type: 'Clase', date: '2026-07-09', completed: false },
+            // IDIOMA MAYA
+            { id: 'im1', subject: 'Idioma Maya', title: 'Plantas (Vocabulario)', desc: 'Recorte y pegue palabras tipos de follaje, 5 oraciones', type: 'Clase', date: '2026-06-11', completed: false },
+            { id: 'im2', subject: 'Idioma Maya', title: 'Clasificación plantas', desc: 'Memoria creativa', type: 'Casa', date: '2026-06-16', completed: false },
+            { id: 'im3', subject: 'Idioma Maya', title: 'Prueba Oral', desc: 'Prueba vocabulario en clase', type: 'Clase', date: '2026-06-30', completed: false },
+            { id: 'im4', subject: 'Idioma Maya', title: 'Oficios/Profesiones', desc: 'Recorte y pegue vocabulario, 5 oraciones', type: 'Casa', date: '2026-07-07', completed: false },
+            { id: 'im5', subject: 'Idioma Maya', title: 'Frutas y Verduras', desc: 'Acordeón creativo en relieve', type: 'Casa', date: '2026-07-21', completed: false },
+            // EMPRENDIMIENTO
+            { id: 'em1', subject: 'Emprendimiento', title: 'Administración', desc: 'Trifoliar con fases pág 110-112', type: 'Casa', date: '2026-06-03', completed: false },
+            { id: 'em2', subject: 'Emprendimiento', title: 'Manualidad Padre', desc: 'Día del padre (Llevar material)', type: 'Clase', date: '2026-06-08', completed: false },
+            { id: 'em5', subject: 'Emprendimiento', title: 'El consumo', desc: 'Cartel doble oficio pág 118', type: 'Casa', date: '2026-06-17', completed: false },
+            { id: 'em3', subject: 'Emprendimiento', title: 'Páginas libro', desc: 'Páginas 125 a 128', type: 'Clase', date: '2026-07-01', completed: false },
+            { id: 'em4', subject: 'Emprendimiento', title: 'Presupuestos', desc: 'Ejercicios páginas 136, 138, 140', type: 'Clase', date: '2026-07-06', completed: false },
+            // EDUCACIÓN ARTÍSTICA
+            { id: 'ea1', subject: 'Expresión Artística', title: 'Ejecución flauta', desc: 'Escala de C en flauta dulce', type: 'Clase', date: '2026-06-09', completed: false },
+            { id: 'ea2', subject: 'Expresión Artística', title: 'Estrellita', desc: 'Interpretar canción en parejas', type: 'Clase', date: '2026-06-17', completed: false },
+            { id: 'ea3', subject: 'Expresión Artística', title: 'Instrum. Reciclaje', desc: 'Crear instrumento musical funcional', type: 'Casa', date: '2026-07-03', completed: false },
+            { id: 'ea4', subject: 'Expresión Artística', title: 'Canción Guate', desc: 'Grupos de 5, letra en cuaderno', type: 'Clase', date: '2026-07-09', completed: false },
+            { id: 'ea5', subject: 'Expresión Artística', title: 'Ejercicios Libro', desc: 'Págs 123 a 203', type: 'Casa', date: '2026-07-16', completed: false },
+            // COMPUTACIÓN
+            { id: 'cp1', subject: 'Computación', title: 'Investigación Excel', desc: '¿Qué es?, celdas, filas. Hojas líneas, folder.', type: 'Casa', date: '2026-06-08', completed: false },
+            { id: 'cp2', subject: 'Computación', title: 'Intro Excel', desc: 'Laboratorio: Selección celdas', type: 'Clase', date: '2026-06-17', completed: false },
+            { id: 'cp3', subject: 'Computación', title: 'Fórmulas', desc: 'Laboratorio: Fórmulas básicas', type: 'Clase', date: '2026-07-01', completed: false },
+            { id: 'cp4', subject: 'Computación', title: 'Formatos', desc: 'Laboratorio: Formato hoja cálculo', type: 'Clase', date: '2026-07-08', completed: false },
+            { id: 'cp5', subject: 'Computación', title: 'Revisión', desc: 'Revisión cuaderno y temas de clase', type: 'Clase', date: '2026-07-15', completed: false }
+        ];
+
+        let tasks = JSON.parse(localStorage.getItem('tareas_1roc')) || seedTasks;
+
+        // Init App
+        function init() {
+            document.getElementById('displayDate').innerText = CURRENT_DATE.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
+            
+            // Llenar select de materias
+            const select = document.getElementById('taskSubject');
+            Object.keys(subjectsInfo).forEach(sub => {
+                let opt = document.createElement('option');
+                opt.value = sub; opt.textContent = subjectsInfo[sub].icon + " " + sub;
+                select.appendChild(opt);
+            });
+
+            saveTasks();
+            updateProgress();
+            renderHome();
+            renderCourses();
+        }
+
+        function saveTasks() {
+            localStorage.setItem('tareas_1roc', JSON.stringify(tasks));
+        }
+
+        // Navegación
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('view-' + viewId).classList.add('active');
+            event.target.classList.add('active');
+
+            if(viewId === 'home') renderHome();
+            if(viewId === 'calendar') renderCalendar();
+        }
+
+        // Render Cards
+        function createTaskCard(task) {
+            const sub = subjectsInfo[task.subject];
+            const badgeClass = task.type === 'Casa' ? 'badge-casa' : 'badge-clase';
+            const dateStr = new Date(task.date + 'T00:00:00').toLocaleDateString('es-ES', {day:'2-digit', month:'short'});
+
+            return `
+                <div class="task-card ${task.completed ? 'completed' : ''}" style="border-left-color: ${sub.color}">
+                    <div class="task-header">
+                        <div class="task-subject" style="color: ${sub.color}">
+                            ${sub.icon} ${task.subject}
+                        </div>
+                        <span class="badge ${badgeClass}">${task.type}</span>
+                    </div>
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-desc">${task.desc}</div>
+                    <div class="task-footer">
+                        <span class="date-text">📅 ${dateStr}</span>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" onchange="toggleTask('${task.id}')" ${task.completed ? 'checked' : ''}>
+                            Completada
+                        </label>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Fechas Helper
+        function getIsoDate(dateObj) {
+            return dateObj.toISOString().split('T')[0];
+        }
+        
+        function renderHome() {
+            const todayIso = getIsoDate(CURRENT_DATE);
+            let tomorrowDate = new Date(CURRENT_DATE);
+            tomorrowDate.setDate(CURRENT_DATE.getDate() + 1);
+            const tomorrowIso = getIsoDate(tomorrowDate);
+
+            const todayTasks = tasks.filter(t => t.date === todayIso);
+            const tomorrowTasks = tasks.filter(t => t.date === tomorrowIso);
+
+            document.getElementById('today-tasks').innerHTML = todayTasks.length ? todayTasks.map(createTaskCard).join('') : '<p class="no-tasks">¡Libre por hoy! 🎉 No hay tareas entregables.</p>';
+            document.getElementById('tomorrow-tasks').innerHTML = tomorrowTasks.length ? tomorrowTasks.map(createTaskCard).join('') : '<p class="no-tasks">Nada para mañana de momento. 😎</p>';
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if(task) {
+                task.completed = !task.completed;
+                saveTasks();
+                updateProgress();
+                
+                // Refrescar vistas abiertas
+                if(document.getElementById('view-home').classList.contains('active')) renderHome();
+                if(document.getElementById('course-details').style.display === 'block') filterCourse(task.subject);
+            }
+        }
+
+        function updateProgress() {
+            if(tasks.length === 0) return;
+            const completed = tasks.filter(t => t.completed).length;
+            const percentage = Math.round((completed / tasks.length) * 100);
+            document.getElementById('progressPercent').innerText = percentage + '%';
+            document.getElementById('progressBar').style.width = percentage + '%';
+        }
+
+        // Sistema de Cursos
+        function renderCourses() {
+            const grid = document.getElementById('courses-list');
+            grid.innerHTML = '';
+            Object.keys(subjectsInfo).forEach(sub => {
+                let count = tasks.filter(t => t.subject === sub && !t.completed).length;
+                grid.innerHTML += `
+                    <div class="course-card" onclick="filterCourse('${sub}')">
+                        <span>${subjectsInfo[sub].icon}</span>
+                        <div>${sub}</div>
+                        <div style="font-size:0.8rem; color:gray; font-weight:normal; margin-top:5px;">${count} pendientes</div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterCourse(subject) {
+            document.getElementById('courses-list').style.display = 'none';
+            document.getElementById('course-details').style.display = 'block';
+            document.getElementById('course-title-details').innerText = subjectsInfo[subject].icon + " " + subject;
+            
+            const courseTasks = tasks.filter(t => t.subject === subject).sort((a,b) => new Date(a.date) - new Date(b.date));
+            document.getElementById('course-tasks').innerHTML = courseTasks.length ? courseTasks.map(createTaskCard).join('') : '<p class="no-tasks">No hay tareas para esta materia.</p>';
+        }
+
+        function closeCourseDetails() {
+            document.getElementById('courses-list').style.display = 'grid';
+            document.getElementById('course-details').style.display = 'none';
+        }
+
+        // Lógica de "Próxima Clase" basada en el horario
+        function calculateNextClass() {
+            const isAuto = document.getElementById('autoDate').checked;
+            if(!isAuto) return;
+
+            const subject = document.getElementById('taskSubject').value;
+            let currentDayNum = CURRENT_DATE.getDay(); // 0=Dom, 1=Lun...
+            let daysToAdd = 0;
+            let found = false;
+
+            // Buscar en los próximos 7 días
+            for(let i=1; i<=7; i++) {
+                let testDay = (currentDayNum + i) % 7;
+                if(schedule[testDay] && schedule[testDay].includes(subject)) {
+                    daysToAdd = i;
+                    found = true;
+                    break;
+                }
+            }
+
+            if(found) {
+                let nextDate = new Date(CURRENT_DATE);
+                nextDate.setDate(CURRENT_DATE.getDate() + daysToAdd);
+                document.getElementById('taskDate').value = getIsoDate(nextDate);
+            } else {
+                alert('Materia no encontrada en el horario habitual. Por favor ingresa la fecha manual.');
+                document.getElementById('autoDate').checked = false;
+            }
+        }
+
+        // Agregar Nueva Tarea
+        document.getElementById('addTaskForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newTask = {
+                id: 't_' + Date.now(),
+                subject: document.getElementById('taskSubject').value,
+                title: document.getElementById('taskTitle').value,
+                desc: document.getElementById('taskDesc').value,
+                type: document.getElementById('taskType').value,
+                date: document.getElementById('taskDate').value,
+                completed: false
+            };
+            tasks.push(newTask);
+            saveTasks();
+            updateProgress();
+            alert('¡Tarea agregada exitosamente!');
+            this.reset();
+            renderCourses(); // refresca conteos
+            switchView('home');
+        });
+
+        // Calendario Lógica
+        function changeMonth(dir) {
+            calendarDate.setMonth(calendarDate.getMonth() + dir);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            document.getElementById('cal-month-name').innerText = calendarDate.toLocaleDateString('es-ES', {month: 'long', year: 'numeric'}).toUpperCase();
+            
+            const firstDay = new Date(year, month, 1).getDay(); // 0-6
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            const grid = document.querySelector('.calendar-grid');
+            // Limpiar dias anteriores (mantener encabezados)
+            grid.innerHTML = '<div class="cal-header">Dom</div><div class="cal-header">Lun</div><div class="cal-header">Mar</div><div class="cal-header">Mié</div><div class="cal-header">Jue</div><div class="cal-header">Vie</div><div class="cal-header">Sáb</div>';
+
+            // Espacios vacios
+            for(let i=0; i<firstDay; i++) grid.innerHTML += '<div></div>';
+
+            // Dias del mes
+            for(let d=1; d<=daysInMonth; d++) {
+                let dDate = new Date(year, month, d);
+                let dIso = getIsoDate(dDate);
+                let isToday = dIso === getIsoDate(CURRENT_DATE);
+                
+                let dayTasks = tasks.filter(t => t.date === dIso);
+                let dotsHtml = dayTasks.map(t => `<div class="dot" style="background:${subjectsInfo[t.subject].color}"></div>`).join('');
+
+                grid.innerHTML += `
+                    <div class="cal-day ${isToday ? 'today' : ''}" onclick="showCalendarTasks('${dIso}')">
+                        <div class="cal-date">${d}</div>
+                        <div class="cal-dots">${dotsHtml}</div>
+                    </div>
+                `;
+            }
+            document.getElementById('cal-selected-tasks').innerHTML = ''; // Limpiar lista inferior
+        }
+
+        function showCalendarTasks(dateIso) {
+            const dTasks = tasks.filter(t => t.date === dateIso);
+            const container = document.getElementById('cal-selected-tasks');
+            const dateFmt = new Date(dateIso + 'T00:00:00').toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'});
+            
+            if(dTasks.length === 0) {
+                container.innerHTML = `<h3 class="section-title">Tareas para: ${dateFmt}</h3><p class="no-tasks">No hay tareas para este día.</p>`;
+                return;
+            }
+            container.innerHTML = `<h3 class="section-title">Tareas para: ${dateFmt}</h3>` + dTasks.map(createTaskCard).join('');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
